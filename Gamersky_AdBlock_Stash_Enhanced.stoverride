@@ -1,5 +1,5 @@
 name: 游民星空去广告（加强版）
-desc: 2026-11-03 v4：新增文末广告接口拦截与广告组件隐藏；保留 v3 开屏规则，效果待设备验证
+desc: 2026-11-03 v5：修正 URL 重写字段为 url-rewrite；保留开屏/弹窗拦截及文末组件隐藏，效果待设备验证
 
 rules:
   # 2026-11-03：按开屏复现时的 DNS 记录补充；规则对其他 App 的相同域名也生效
@@ -69,7 +69,7 @@ http:
   mitm:
     - "*.gamersky.com"
 
-  rewrite:
+  url-rewrite:
     # 文章底部自有广告：由当前官方模板中的取广告函数确认
     - '^https?://router\d*\.gamersky\.com/@/ad/getAdInPostPageBottom(?:/|\?|$) - reject-dict'
     - '^https?:\/\/.+\.gamersky\.com\/v1\/statisticAd - reject-dict'
