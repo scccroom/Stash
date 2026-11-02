@@ -1,7 +1,18 @@
 name: 游民星空去广告（加强版）
-desc: 2026-11-03 v2：补充 ADmobile 广告域名拦截；保留原有规则，开屏效果待设备验证
+desc: 2026-11-03 v3：根据开屏 DNS 记录补充倍孜/优加、Fancy、1RTB 及拼多多 DSP 广告拦截；效果待设备验证
 
 rules:
+  # 2026-11-03：按开屏复现时的 DNS 记录补充；规则对其他 App 的相同域名也生效
+  # 倍孜 / 优加广告请求与追踪：ad-api、adx-track、ssp-track
+  - DOMAIN-SUFFIX,adn-plus.com.cn,REJECT
+  # 广告请求：aplus.fancydsp.com、ad-open2.fancydsp.com
+  - DOMAIN-SUFFIX,fancydsp.com,REJECT
+  # 广告 SDK：lftxali.fancyapi.com
+  - DOMAIN-SUFFIX,fancyapi.com,REJECT
+  # 广告 SDK 与拼多多 DSP；只阻断广告专用主机
+  - DOMAIN,sdk.1rtb.net,REJECT
+  - DOMAIN,t-dsp.pinduoduo.com,REJECT
+
   # ADmobile / 天目广告：补充旧版未覆盖的广告平台
   # 域名规则对其他使用该平台的 App 同样生效；不拦游民资讯图片/视频域名
   - DOMAIN-SUFFIX,admobile.top,REJECT
