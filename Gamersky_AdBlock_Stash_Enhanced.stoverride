@@ -1,5 +1,5 @@
 name: 游民星空去广告（加强版）
-desc: 2026-11-03 v3：根据开屏 DNS 记录补充倍孜/优加、Fancy、1RTB 及拼多多 DSP 广告拦截；效果待设备验证
+desc: 2026-11-03 v4：新增文末广告接口拦截与广告组件隐藏；保留 v3 开屏规则，效果待设备验证
 
 rules:
   # 2026-11-03：按开屏复现时的 DNS 记录补充；规则对其他 App 的相同域名也生效
@@ -70,5 +70,12 @@ http:
     - "*.gamersky.com"
 
   rewrite:
+    # 文章底部自有广告：由当前官方模板中的取广告函数确认
+    - '^https?://router\d*\.gamersky\.com/@/ad/getAdInPostPageBottom(?:/|\?|$) - reject-dict'
     - '^https?:\/\/.+\.gamersky\.com\/v1\/statisticAd - reject-dict'
     - '^https?:\/\/.+\.gamersky\.com\/.+\/adSystem\/ad\/.+ - reject-dict'
+
+  # 仅隐藏官方模板里命名明确的文末广告组件，连同其标题、广告标识和关闭按钮
+  # 不修改文章正文、游戏卡片、评论或相关推荐
+  body-rewrite:
+    - '^https?://app\.gamersky\.com/template/[^/?]+\.html(?:\?|$) response-replace-regex (?i)</head> <style>.AdInPostPageBottom{display:none!important}</style></head>'
