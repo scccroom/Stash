@@ -1,7 +1,11 @@
 name: 游民星空去广告（加强版）
-desc: 针对游民星空自有广告接口 + 常见第三方广告 SDK 的 Stash 覆写
+desc: 2026-11-03 v2：补充 ADmobile 广告域名拦截；保留原有规则，开屏效果待设备验证
 
 rules:
+  # ADmobile / 天目广告：补充旧版未覆盖的广告平台
+  # 域名规则对其他使用该平台的 App 同样生效；不拦游民资讯图片/视频域名
+  - DOMAIN-SUFFIX,admobile.top,REJECT
+
   # 游民星空自有广告域名
   - DOMAIN,ja.gamersky.com,REJECT
   - DOMAIN,ja1.gamersky.com,REJECT
