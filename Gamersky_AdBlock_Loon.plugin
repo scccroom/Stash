@@ -1,0 +1,60 @@
+#!name=游民星空去广告
+#!desc=V7 · 2026-11-04 · 开屏广告域名拦截与文末广告隐藏
+#!category=去广告
+
+[Rule]
+DOMAIN-SUFFIX,adn-plus.com.cn,REJECT
+DOMAIN-SUFFIX,fancydsp.com,REJECT
+DOMAIN-SUFFIX,fancyapi.com,REJECT
+DOMAIN,sdk.1rtb.net,REJECT
+DOMAIN,t-dsp.pinduoduo.com,REJECT
+DOMAIN-SUFFIX,admobile.top,REJECT
+DOMAIN,ja.gamersky.com,REJECT
+DOMAIN,ja1.gamersky.com,REJECT
+DOMAIN,ja2.gamersky.com,REJECT
+DOMAIN,click.gamersky.com,REJECT
+DOMAIN,sdk.e.qq.com,REJECT
+DOMAIN,mi.gdt.qq.com,REJECT
+DOMAIN,v2mi.gdt.qq.com,REJECT
+DOMAIN,win.gdt.qq.com,REJECT
+DOMAIN,adsmind.gdtimg.com,REJECT
+DOMAIN,adsmind.ugdtimg.com,REJECT
+DOMAIN,pgdt.ugdtimg.com,REJECT
+DOMAIN,pgdt.gtimg.cn,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao1.com,REJECT
+DOMAIN,log-api.pangolin-sdk-toutiao.com,REJECT
+DOMAIN,log-api.pangolin-sdk-toutiao-b.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao-b.com,REJECT
+DOMAIN,api-access.pangolin-sdk-toutiao2.com,REJECT
+DOMAIN,api-access.pangolin-sdk-toutiao3.com,REJECT
+DOMAIN,api-access.pangolin-sdk-toutiao4.com,REJECT
+DOMAIN,api-access.pangolin-sdk-toutiao5.com,REJECT
+DOMAIN,sf3-fe-tos.pglstatp-toutiao.com,REJECT
+DOMAIN,sf3-be-pack.pglstatp-toutiao.com,REJECT
+DOMAIN,mobads.baidu.com,REJECT
+DOMAIN,open.e.kuaishou.com,REJECT
+DOMAIN,gdfp.gifshow.com,REJECT
+DOMAIN,sdk.beizi.biz,REJECT
+DOMAIN,api-htp.beizi.biz,REJECT
+DOMAIN,api.htp.ad-scope.com.cn,REJECT
+DOMAIN-SUFFIX,sigmob.cn,REJECT
+DOMAIN-SUFFIX,inmobi.com,REJECT
+DOMAIN-SUFFIX,inmobi.cn,REJECT
+DOMAIN-SUFFIX,inmobicdn.net,REJECT
+DOMAIN-SUFFIX,rayjump.com,REJECT
+DOMAIN-SUFFIX,mintegral.com,REJECT
+DOMAIN-SUFFIX,mobvista.com,REJECT
+DOMAIN-SUFFIX,mtgglobals.com,REJECT
+DOMAIN,ef-dongfeng.tanx.com,REJECT
+DOMAIN,ifs.tanx.com,REJECT
+
+[Rewrite]
+^https?://router\d*\.gamersky\.com/@/ad/getAdInPostPageBottom(?:/|\?|$) reject-dict
+^https?:\/\/.+\.gamersky\.com\/v1\/statisticAd reject-dict
+^https?:\/\/.+\.gamersky\.com\/.+\/adSystem\/ad\/.+ reject-dict
+^https?://router\d*\.gamersky\.com/@/postPage/index/(?:[^?]+)(?:\?|$) response-body-json-jq 'if type=="object" then if (.post|type)=="object" and (.post.contentInHtml|type)=="string" then .post.contentInHtml |= (if contains("gs-stash-footer-ad") then . else . + "<style id=\"gs-stash-footer-ad\">.AdInPostPageBottom{display:none!important}</style>" end) else . end else . end'
+^https?://(?:app\.gamersky\.com/template/[^/?]+\.html|m\.gamersky\.com/news/index\.html)(?:\?|$) response-body-replace-regex (?i)</head> <style>.AdInPostPageBottom{display:none!important}</style></head>
+
+[MitM]
+hostname = *.gamersky.com
