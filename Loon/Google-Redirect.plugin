@@ -1,0 +1,9 @@
+#!name = Google 搜索重定向
+#!desc = 将 google.cn 和 www.google.cn 跳转到 www.google.com，保留路径和搜索参数。HTTPS 需启用 MitM。
+#!loon_version = 3.5.1(978)
+
+[Rewrite]
+request if ${url} ~= /^https?:\/\/(?:www\.)?google\.cn(?=\/|\?|$)/ then redirect(302, "https://www.google.com")
+
+[Mitm]
+hostname = google.cn, www.google.cn
