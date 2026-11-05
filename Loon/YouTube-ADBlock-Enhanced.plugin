@@ -1,13 +1,17 @@
-#!name = YouTube 去广告增强版
-#!desc = 12 项参数：10 个开关 + 字幕/歌词翻译，含首页 Sponsored 补强；需启用改写与 MitM。与旧 YouTube 插件二选一。
-#!author = Maasea[https://github.com/Maasea] gholts[https://github.com/gholts] RuCu6[https://github.com/RuCu6] VirgilClyne[https://github.com/VirgilClyne] Hey-sayiwanna[https://github.com/Hey-sayiwanna]
-#!homepage = https://github.com/your98k/Rule-Hub
+#!name = YouTube 自改
+#!desc = scccroom 自用维护版。支持 YouTube 去广告、首页广告补强、画质设置及字幕/歌词翻译；需启用改写与 MitM，与其他 YouTube 去广告插件二选一。
+#!author = scccroom[https://github.com/scccroom]
+#!homepage = https://github.com/scccroom/Stash
 #!icon = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/YouTube.png
 #!tag = 去广告,YouTube
 #!system = iOS,iPadOS
 #!loon_version = 3.5.1(978)
-#!date = 2026-10-30
-#!version = 1.3.3
+#!date = 2026-11-05
+#!version = 1.3.3-scccroom.1
+
+# Upstream source: https://github.com/your98k/Rule-Hub
+# Original authors: Maasea[https://github.com/Maasea] gholts[https://github.com/gholts] RuCu6[https://github.com/RuCu6] VirgilClyne[https://github.com/VirgilClyne] Hey-sayiwanna[https://github.com/Hey-sayiwanna]
+# Maintainer: scccroom; metadata customized on 2026-11-05.
 
 [Argument]
 autoHd = switch,false,type=boolean,tag=自动最高画质,desc=自动选择 YouTube 最高画质
