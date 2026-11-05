@@ -1,5 +1,5 @@
 #!name = YouTube 自改 · scccroom
-#!desc = scccroom 自用维护版。支持 YouTube 去广告、首页广告补强、画质设置及字幕/歌词翻译；需启用改写与 MitM，与其他 YouTube 去广告插件二选一。
+#!desc = scccroom 自用维护版 v3：补全播放域名、限制 YouTube QUIC 绕过并修复 Loon 播放数据解压兼容；支持去广告、画质设置及字幕/歌词翻译。需启用改写与 MitM，与其他 YouTube 去广告插件二选一。
 #!author = scccroom[https://github.com/scccroom]
 #!homepage = https://github.com/scccroom/Stash
 #!icon = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/YouTube.png
@@ -7,7 +7,7 @@
 #!system = iOS,iPadOS
 #!loon_version = 3.5.1(978)
 #!date = 2026-11-05
-#!version = 2026.11.05.2
+#!version = 2026.11.05.3
 
 # Upstream source: https://github.com/your98k/Rule-Hub
 # Original authors: Maasea[https://github.com/Maasea] gholts[https://github.com/gholts] RuCu6[https://github.com/RuCu6] VirgilClyne[https://github.com/VirgilClyne] Hey-sayiwanna[https://github.com/Hey-sayiwanna]
@@ -27,6 +27,11 @@ homeFeedPatch = switch,true,type=boolean,tag=首页信息流补强,desc=清理�
 captionLang = select,"简体中文","关闭翻译","繁體中文","英语","日语","韩语",type=string,tag=字幕翻译语言,desc=翻译 timedtext 字幕响应；关闭则保留原文
 lyricLang = select,"简体中文","关闭翻译","繁體中文","英语","日语","韩语",type=string,tag=歌词翻译语言,desc=调用 Google Translate 翻译歌词；关闭则不发送歌词
 
+[Rule]
+# Restrict fallback to the YouTube API and media hosts used by these scripts.
+AND,((DOMAIN,youtubei.googleapis.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,googlevideo.com),(PROTOCOL,QUIC)),REJECT
+
 [Rewrite]
 request if ${url} ~= /^https?:\/\/s\.youtube\.com\/api\/stats\/ads/i then reject(404)
 request if ${url} ~= /^https?:\/\/www\.youtube\.com\/(?:pagead|pcs)\//i then reject(404)
@@ -35,8 +40,8 @@ request if ${url} ~= /^https?:\/\/www\.youtube\.com\/(?:pagead|pcs)\//i then rej
 request if ${url} ~= /^https?:\/\/(?:(?:youtubei\.googleapis\.com\/youtubei\/v1\/(?:player\/ad_break|log_event))|(?:[A-Za-z0-9_-]+\.googlevideo\.com\/(?:initplayback|videoplayback)))(?:\?.*)?$/i then script("https://raw.githubusercontent.com/scccroom/Stash/main/Script/Youtube/YouTube-ADBlock-Enhanced.request.js", {${autoHd}}) with tag="YouTube request", timeout=15, requires_body=true, binary_body_mode=true
 response if ${url} ~= /^https?:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(?:navigation\/resolve_url|browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch)(?:\?.*)?$/i then script("https://raw.githubusercontent.com/scccroom/Stash/main/Script/Youtube/YouTube-ADBlock-Enhanced.response.js", {${autoHd}, ${blockAi}, ${blockGames}, ${blockShorts}, ${blockStore}, ${blockUpload}, ${blockVerticalLive}, ${jumpAhead}, ${onTheGo}, ${homeFeedPatch}, ${captionLang}, ${lyricLang}}) with tag="YouTube response", timeout=30, requires_body=true, binary_body_mode=true
 response if ${url} ~= /^https?:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(?:config|log_event)(?:\?.*)?$/i then script("https://raw.githubusercontent.com/scccroom/Stash/main/Script/Youtube/YouTube-ADBlock-Enhanced.key.js") with tag="YouTube key", timeout=20, requires_body=true, binary_body_mode=true
-response if ${url} ~= /^https?:\/\/[A-Za-z0-9_-]+\.googlevideo\.com\/initplayback(?:\?.*)?$/i then script("https://raw.githubusercontent.com/scccroom/Stash/main/Script/Youtube/YouTube-ADBlock-Enhanced.ump.js", {${autoHd}, ${blockAi}, ${blockGames}, ${blockShorts}, ${blockStore}, ${blockUpload}, ${blockVerticalLive}, ${jumpAhead}, ${onTheGo}, ${homeFeedPatch}, ${captionLang}, ${lyricLang}}) with tag="YouTube UMP", timeout=30, requires_body=true, binary_body_mode=true
+response if ${url} ~= /^https?:\/\/[A-Za-z0-9_-]+\.googlevideo\.com\/initplayback(?:\?.*)?$/i then script("https://raw.githubusercontent.com/scccroom/Stash/main/Script/Youtube/YouTube-ADBlock-Enhanced.ump.js?v=20261105.3", {${autoHd}, ${blockAi}, ${blockGames}, ${blockShorts}, ${blockStore}, ${blockUpload}, ${blockVerticalLive}, ${jumpAhead}, ${onTheGo}, ${homeFeedPatch}, ${captionLang}, ${lyricLang}}) with tag="YouTube UMP", timeout=30, requires_body=true, binary_body_mode=true
 response if ${url} ~= /^https?:\/\/[^/]+\.youtube\.com\/api\/timedtext/i then script("https://raw.githubusercontent.com/scccroom/Stash/main/Script/Youtube/YouTube-ADBlock-Enhanced.timedtext.js", {${captionLang}}) with tag="YouTube captions", timeout=30, requires_body=true, binary_body_mode=true
 
 [Mitm]
-hostname = rr*.googlevideo.com, s.youtube.com, www.youtube.com, youtubei.googleapis.com
+hostname = *.googlevideo.com, s.youtube.com, www.youtube.com, youtubei.googleapis.com
