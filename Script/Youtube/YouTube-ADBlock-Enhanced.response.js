@@ -2628,6 +2628,126 @@ async function __stashTranslateBody(bytes, options, url, httpClient, logger) {
     return changed ? concatBytes(chunks) : bytes;
   }
 
+  // Search continuation fields and newer EML commands are documented in
+  // devchristian1337/loon-plugins@f403d119058a2486c8bc7592d9104dbb8a5116a0.
+  const SEARCH_AD_MODELS = {
+    video_display_button_group_layout: [491441836, 19, 8, 10, 4],
+    full_width_portrait_image_layout: [478840678, 27, 7, 10, 4],
+    full_width_square_image_layout: [461080918, 55, 7, 10, 4],
+    full_width_square_image_carousel_layout: [33562350, 5, 5, 10, 4],
+    carousel_footered_layout: [505359416, 31, 8, 10, 4],
+    video_display_full_buttoned_layout: [454362329, 32, 8, 10, 4],
+    video_display_carousel_button_group_layout: [33561652, 14, 8, 10, 4],
+    banner_text_icon_buttoned_layout: [378585263, 5, 3, 4],
+    fullscreen_engagement_companion: [252081505, 13, 1],
+    engagement_header: [403122092, 5, 2, 4],
+  };
+  const SEARCH_AD_COMMAND_PATH = [169495254, 138681778, 2, 138681066, 3, 449330433];
+  const SEARCH_AD_COMMAND = textEncoder.encode("skip_ad_on_block");
+
+  function hasSearchAdCommand(bytes, path, depth = 0) {
+    return wireFields(bytes).some(({ no, wire, data }) => {
+      if (wire !== 2) return false;
+      if (depth < path.length) return no === path[depth] && hasSearchAdCommand(data, path, depth + 1);
+      if (no !== 8 && no !== 57) return false;
+      const entry = no === 57 ? bytesField(data, 1, true) : data;
+      if (!entry) return false;
+      const key = bytesField(entry, 1, true);
+      return !!key && sameBytes(key, SEARCH_AD_COMMAND) && bytesField(entry, 2, true) !== undefined;
+    });
+  }
+
+  function searchCardKind(fields) {
+    const renderers = fields.filter(({ no }) => no >= 1e6);
+    if (renderers.length !== 1 || renderers[0].wire !== 2) return;
+    const { no, data } = renderers[0];
+    if (no === 424701016 || no === 73920376) return "ad";
+    if (no !== 153515154) return;
+    const element = bytesField(data, 172660663, true);
+    if (!element || wireFields(element).some((field) => field.no === 3)) return;
+    const context = binaryAt(element, [1, 168777401]);
+    if (!context) return;
+    const template = binaryAt(context, [3, 172035250, 1]);
+    if (!template) return;
+    const layout = /^([a-z_]+)\.eml-fe\|[0-9a-f]{1,16}$/.exec(utf8.decode(template))?.[1];
+    const model = bytesField(context, 5, true);
+    if (!layout || !model) return;
+    const modelFields = wireFields(model);
+    if (modelFields.length !== 1 || modelFields[0].wire !== 2) return;
+    if (layout === "cell_divider" && modelFields[0].no === 347043917) return "divider";
+    const definition = SEARCH_AD_MODELS[layout];
+    if (definition && modelFields[0].no === definition[0]) {
+      const path = definition.slice(1).concat(SEARCH_AD_COMMAND_PATH);
+      if (hasSearchAdCommand(modelFields[0].data, path)) return "ad";
+    }
+  }
+
+  function filterSearchEntries(bytes, inspect) {
+    const fields = wireFields(bytes);
+    const kept = [];
+    let changed = false;
+    let afterAd = false;
+    let entries = 0;
+    let retained = 0;
+    let divider = false;
+    for (const field of fields) {
+      if (field.no !== 1 || field.wire !== 2) {
+        kept.push(field.raw);
+        continue;
+      }
+      entries++;
+      let item = {};
+      try {
+        item = inspect(field.data);
+      } catch {
+        // An unrecognized card must not discard the rest of the page.
+      }
+      if (item.kind === "ad" || (afterAd && item.kind === "divider")) {
+        changed = true;
+        afterAd = item.kind === "ad";
+        continue;
+      }
+      divider = item.kind === "divider";
+      afterAd = false;
+      retained++;
+      if (item.body && item.body !== field.data) {
+        kept.push(nativeField(1, item.body));
+        changed = true;
+      } else kept.push(field.raw);
+    }
+    const sectionOnly = fields.every((field) => field.no === 1 || field.no === 4 || field.no === 8);
+    let kind;
+    if (sectionOnly && entries > 0 && retained === 0) kind = "ad";
+    if (sectionOnly && entries === 1 && divider) kind = "divider";
+    return { body: changed ? concatBytes(kept) : bytes, kind };
+  }
+
+  function inspectSearchSection(bytes) {
+    const renderers = wireFields(bytes).filter(({ no }) => no >= 1e6);
+    if (renderers.length !== 1 || renderers[0].wire !== 2) return {};
+    const { no, data } = renderers[0];
+    if (no === 424701016 || no === 55514441 || no === 73920376) return { kind: "ad" };
+    if (no !== 50195462) return {};
+    const section = filterSearchEntries(data, (entry) => ({ kind: searchCardKind(wireFields(entry)) }));
+    return { kind: section.kind, body: rewriteBinaryPath(bytes, [no], () => section.body) };
+  }
+
+  function cleanSearchContinuation(bytes) {
+    for (const field of [7, 10]) {
+      bytes = rewriteBinaryPath(bytes, [field], (command) => {
+        try {
+          for (const list of [49399797, 51779776]) {
+            command = rewriteBinaryPath(command, [list], (data) => filterSearchEntries(data, inspectSearchSection).body);
+          }
+          return command;
+        } catch {
+          return command;
+        }
+      });
+    }
+    return bytes;
+  }
+
   const ROUTES = {
     "navigation/resolve_url": ["ResolveUrl", transformNavigation],
     browse: ["Browse", transformContent],
@@ -2640,22 +2760,27 @@ async function __stashTranslateBody(bytes, options, url, httpClient, logger) {
     get_watch: ["Watch", transformWatch],
   };
   function apiMain() {
+    let cleanedSearch;
     try {
       const endpoint = $request.url.split("?")[0].split("/youtubei/v1/")[1];
       const route = Object.hasOwn(ROUTES, endpoint) && ROUTES[endpoint];
       if (!route || Number($response.status) >= 300 || !$response.body?.length) return $done();
       const [type, transform] = route,
         messageCodec = codec(type);
-      const message = messageCodec.fromBinary($response.body);
+      const original = $response.body;
+      const body = endpoint === "search" ? cleanSearchContinuation(original) : original;
+      if (body !== original) cleanedSearch = { body };
       const options = readOptions({
         blockUpload: true,
         blockShorts: false,
       });
+      const message = messageCodec.fromBinary(body);
       if (options.autoHd !== false) cacheQuality(responsePlayers(type, message));
-      $done(transform(message, options) ? { body: messageCodec.toBinary(message) } : {});
+      if (transform(message, options)) return $done({ body: messageCodec.toBinary(message) });
+      $done(cleanedSearch ?? {});
     } catch (error) {
       console.log("YouTube response: " + error);
-      $done();
+      $done(cleanedSearch);
     }
   }
 
