@@ -1,5 +1,6 @@
 #!name = Google 搜索重定向
 #!desc = 将 google.cn 和 www.google.cn 跳转到 www.google.com，保留路径和搜索参数。HTTPS 需启用 MitM。
+#!icon = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/Google.png
 #!loon_version = 3.5.1(978)
 
 [Rewrite]
